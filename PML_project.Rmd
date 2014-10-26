@@ -1,0 +1,64 @@
+---
+title: "Practical machine learning project"
+output: html_document
+---
+
+--------------  
+
+## Data Processing
+  
+```{r message=FALSE}
+library(caret)
+library(ggplot2)
+training<-read.csv('pml-training.csv')
+testing<-read.csv('pml-testing.csv')
+```
+
+First, I tried some exploratory plotting to see if I can find out some association between data.  
+
+```{r}
+ggplot(training,aes(x=roll_belt,y=pitch_belt,color=classe))+geom_point()
+ggplot(training,aes(x=total_accel_arm,y=total_accel_belt,color=classe))+geom_point()
+```
+  
+Due to the report require, I can only put few pitcture on report.  
+Found out that its nearly impossible to find some particular feature to separate classe.  
+So I decided to let machine do the work to help me separate.  
+The algorithm I choose is C5.0Trees, which is a decision tree based algorithm.  
+
+------  
+
+## Result  
+
+Before I train the data, first I removed the feature shows no differences in testing, to narrow down the features used in machine learning.  
+I seperate the original data in to two subgroup, training group and validation group to do the cross validation, ratio is 2/3 to 1/3. The reason I choose 2/3 and 1/3 is because the sample size is big enough to lower the number of training samples, and offer more variation for valitation. It might cause bigger variance for every training, but according to CLT, I guess there wont be too big variance in there.
+
+
+
+```{r}
+t<-c()
+for(x in seq(1,length(colnames(testing)))){
+    if(sum(is.na(testing[,x]))==length(testing[,x])){
+        t<-c(t,x)
+    }
+}
+training_extract<-training[,-c(t,seq(1,6))]
+inTrain <- createDataPartition(training_extract$classe, p = 2/3, list = FALSE)
+training_data<-training_extract[inTrain,]
+testing_data<-training_extract[-inTrain,]
+```
+  
+By the time I trying different machine learning algorithm, I tried several tree-based algorithm, such as rpart or random-forest. Rpart have about 0.5 acuracy, Rpar2 have around 0.62, Random forest cant even finish training. At the end when I tried C5.0trees, it show up 0.979 accuracy, which is pretty surprising, so i decided to use C5.0tree as my final algorithm.
+
+  
+```{r warning=FALSE}
+Modelfit<-train(classe~.,method='C5.0Tree',data=training_data)
+predictions<-predict(Modelfit,newdata = testing_data)
+confusionMatrix(predictions,testing_data$classe)
+```
+  
+The error shows in data might cause by the original data outlier. This data is created by samples do the specific activity, so there should be some special sample type, for instance, an potential ADHD patient doing sitting or sleeping activity. Considering those outlier will cause overfitting to data, and 0.979 accuracy is high enough for my training, so I choose to ignore it.
+
+```{r}
+predict(Modelfit,newdata = testing)
+```

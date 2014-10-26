@@ -1,4 +1,5 @@
-PML_Assignment
+PracticleML_Assignment
 ==============
 
-PracticalMachineLearning_Assignment
+This is my practicle machine learning assignment repo.  
+thanks and enjoy.
